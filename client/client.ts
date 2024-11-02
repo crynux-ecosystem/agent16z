@@ -68,6 +68,7 @@ const book_flight = async (num_passengers, timestamp) => {
     .bookFlight(timestamp, num_passengers)
     .accounts({ flightAccount: flightAgent })
     .rpc({ commitment: "confirmed" });
+  console.log(">>> Book Flight: ", `${num_passengers}`);
   console.log(
     "Transaction Signature:",
     `https://solana.fm/tx/${tx}?cluster=devnet-solana`
@@ -81,6 +82,7 @@ const book_hotel = async (num_person, timestamp) => {
     .bookHotel(timestamp, num_person)
     .accounts({ hotelAccount: hotelAgent })
     .rpc({ commitment: "confirmed" });
+  console.log(">>> Book hotel: ", `${num_person}`);
   console.log(
     "Transaction Signature:",
     `https://solana.fm/tx/${tx}?cluster=devnet-solana`
@@ -94,6 +96,7 @@ const book_taxi = async (timestamp) => {
     .bookTaxi(timestamp)
     .accounts({ taxiAccount: taxiAgent })
     .rpc({ commitment: "confirmed" });
+  console.log(">>> Book taxi");
   console.log(
     "Transaction Signature:",
     `https://solana.fm/tx/${tx}?cluster=devnet-solana`
