@@ -3,6 +3,9 @@ import * as web3 from "@solana/web3.js";
 // Client
 import { PublicKey, Keypair, Transaction } from "@solana/web3.js";
 import type { Agentz } from "../target/types/agentz";
+import { Mistral } from "@mistralai/mistralai";
+import * as dotenv from "dotenv";
+dotenv.config({ path: ".env" });
 
 
 // Configure the client to use the local cluster
@@ -115,8 +118,26 @@ const book_taxi = async (timestamp) => {
   await show_account(program.account.taxiAccount, taxiAgent);
 };
 
+const mistral = new Mistral({
+  apiKey: process.env["MISTRAL_API_KEY"],
+});
+
 (async () => {
-  await init_accounts(); // Call only once on the contracts
+  // await init_accounts(); // Call only once on the contracts
+
+  const result = await mistral.chat.complete({
+    model: "mistral-small-latest",
+    messages: [
+      {
+        content:
+          "Who is the best French painter? Answer in one short sentence.",
+        role: "user",
+      },
+    ],
+  });
+
+  // Handle the result
+  console.log(result);
 
   await book_hotel(2, 173);
   await book_flight(2, 173);
