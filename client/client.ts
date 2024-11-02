@@ -1,17 +1,41 @@
 import * as anchor from "@coral-xyz/anchor";
 import * as web3 from "@solana/web3.js";
 // Client
-import { PublicKey } from "@solana/web3.js";
+import { PublicKey, Keypair, Transaction } from "@solana/web3.js";
 import type { Agent16z } from "../target/types/agent16z";
+
+import fs from "fs";
+
 
 // Configure the client to use the local cluster
 anchor.setProvider(anchor.AnchorProvider.env());
 
 const program = anchor.workspace.Agent16z as anchor.Program<Agent16z>;
 
+const secretKey: number[] = JSON.parse(fs.readFileSync('../target/deploy/agent16z-keypair.json', 'utf8'));
+const keypair = Keypair.fromSecretKey(Uint8Array.from(secretKey));
+interface Wallet {
+  publicKey: typeof keypair.publicKey;
+  signTransaction(transaction: Transaction): Promise<Transaction>;
+  signAllTransactions(transactions: Transaction[]): Promise<Transaction[]>;
+}
 
-const program = program;
-const wallet = pg.wallet;
+// Create a wallet object from the Keypair
+const wallet: Wallet = {
+  publicKey: keypair.publicKey,
+  signTransaction: async (transaction: Transaction): Promise<Transaction> => {
+    transaction.partialSign(keypair);
+    return transaction;
+  },
+  signAllTransactions: async (transactions: Transaction[]): Promise<Transaction[]> => {
+    return transactions.map((transaction) => {
+      transaction.partialSign(keypair);
+      return transaction;
+    });
+  },
+};
+
+
 
 console.log("My address:", wallet.publicKey.toString());
 const balance = await program.provider.connection.getBalance(wallet.publicKey);
