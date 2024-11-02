@@ -1,11 +1,12 @@
 import * as anchor from "@coral-xyz/anchor";
 import * as web3 from "@solana/web3.js";
 // Client
-import { PublicKey, Keypair, Transaction } from "@solana/web3.js";
+import { PublicKey } from "@solana/web3.js";
 import type { Agentz } from "../target/types/agentz";
 import { Mistral } from "@mistralai/mistralai";
 import { ToolTypes, FunctionT, FunctionT$inboundSchema } from "@mistralai/mistralai/models/components";
 import * as dotenv from "dotenv";
+import axios from "axios";
 dotenv.config({ path: ".env" });
 
 
@@ -170,6 +171,44 @@ const tools = [
 ];
 
 
+const user_selected_chain = "polygon";
+const user_selected_currency = "usdc";
+const user_selected_wallet_address = "";
+
+const sp_chain = "solana";
+const sp_currency = "usdc";
+const sp_address = "";
+
+const request_payment = async (amount) => {
+  const resp = await axios.post("https://api.bridge.xyz/v0/transfers", {
+    "amount": amount,
+    "on_behalf_of": "service_provider",
+    "source": {
+      "payment_rail": user_selected_chain,
+      "currency": user_selected_currency,
+      "from_address": user_selected_wallet_address
+    },
+    "destination": {
+      "payment_rail": sp_chain,
+      "currency": sp_currency,
+      "to_address": sp_address,
+    }
+  }, {
+    headers: {
+      "Content-Type": "application/json",
+      "Api-Key": process.env["BRIDGE_API_KEY"],
+    }
+  });
+
+  const instructions = resp.data.source_deposit_instructions;
+  console.log("Token transfer instructions: ");
+  console.log("Chain: " + instructions.payment_rail);
+  console.log("Currency: " + instructions.currency);
+  console.log("Amount: " + instructions.amount);
+  console.log("From address: " + instructions.from_address);
+  console.log("To address: " + instructions.to_address);
+};
+
 (async () => {
   // await init_accounts(); // Call only once on the contracts
 
@@ -189,6 +228,7 @@ const tools = [
   console.log(result);
   console.log(result.choices[0].message.toolCalls);
 
+
   var f2sc = {
     "book_hotel": book_hotel,
     "book_flight": book_flight,
@@ -202,4 +242,7 @@ const tools = [
     args["timestamp"] = 173;
     await f2sc[f.function.name](args);
   }
+
+  await request_payment(0.5);
+
 })().then().catch(console.error);
