@@ -124,6 +124,91 @@ const mistral = new Mistral({
   apiKey: process.env["MISTRAL_API_KEY"],
 });
 
+
+const tools = [
+  {
+      type: ToolTypes.Function,
+      function: {
+        name: "book_hotel",
+        description: "Book a hotel for users",
+        parameters: {
+            type: "object",
+            properties: {
+                num_person: {
+                    type: "integer",
+                    description: "Num of people to live in",
+                }
+            },
+            required: ["num_person"],
+        },
+      },
+  },
+  {
+      type: ToolTypes.Function,
+      function: {
+          name: "book_flight",
+          description: "Book a flight with the constraints",
+          parameters: {
+              type: "object",
+              properties: {
+                  num_passengers: {
+                      type: "integer",
+                      description: "Num of passengers to book a flight.",
+                  }
+              },
+              required: ["num_passengers"],
+          }
+      }
+  },
+  {
+    type: ToolTypes.Function,
+    function: {
+        name: "book_taxi",
+        description: "Book a taxi",
+        parameters: {},
+    },
+  }
+];
+
+
+const user_selected_chain = "polygon";
+const user_selected_currency = "usdc";
+const user_selected_wallet_address = "";
+
+const sp_chain = "solana";
+const sp_currency = "usdc";
+const sp_address = "";
+
+const request_payment = async (amount) => {
+  const resp = await axios.post("https://api.bridge.xyz/v0/transfers", {
+    "amount": amount,
+    "on_behalf_of": "service_provider",
+    "source": {
+      "payment_rail": user_selected_chain,
+      "currency": user_selected_currency,
+      "from_address": user_selected_wallet_address
+    },
+    "destination": {
+      "payment_rail": sp_chain,
+      "currency": sp_currency,
+      "to_address": sp_address,
+    }
+  }, {
+    headers: {
+      "Content-Type": "application/json",
+      "Api-Key": process.env["BRIDGE_API_KEY"],
+    }
+  });
+
+  const instructions = resp.data.source_deposit_instructions;
+  console.log("Token transfer instructions: ");
+  console.log("Chain: " + instructions.payment_rail);
+  console.log("Currency: " + instructions.currency);
+  console.log("Amount: " + instructions.amount);
+  console.log("From address: " + instructions.from_address);
+  console.log("To address: " + instructions.to_address);
+};
+
 (async () => {
   // await init_accounts(); // Call only once on the contracts
 
@@ -141,8 +226,23 @@ const mistral = new Mistral({
 
   // Handle the result
   console.log(result);
+  console.log(result.choices[0].message.toolCalls);
 
-  await book_hotel(2, 173);
-  await book_flight(2, 173);
-  await book_taxi(173);
+
+  var f2sc = {
+    "book_hotel": book_hotel,
+    "book_flight": book_flight,
+    "book_taxi": book_taxi,
+  }
+
+
+  for (var idx in result.choices[0].message.toolCalls) {
+    let f = result.choices[0].message.toolCalls[idx];
+    let args: Record<string, any> = JSON.parse(f.function["arguments"] as string);
+    args["timestamp"] = 173;
+    await f2sc[f.function.name](args);
+  }
+
+  await request_payment(0.5);
+
 })().then().catch(console.error);
