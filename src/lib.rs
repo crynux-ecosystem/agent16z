@@ -1,49 +1,115 @@
-use borsh::{BorshDeserialize, BorshSerialize};
-use solana_program::{
-    account_info::{next_account_info, AccountInfo},
-    entrypoint,
-    entrypoint::ProgramResult,
-    msg,
-    program_error::ProgramError,
-    pubkey::Pubkey,
-};
+use anchor_lang::prelude::*;
 
-/// Define the type of state stored in accounts
-#[derive(BorshSerialize, BorshDeserialize, Debug)]
-pub struct GreetingAccount {
-    /// number of greetings
-    pub counter: u32,
-}
+declare_id!("7ooQgk2dzwGzW8T5GFiWP5iYdb2Nuppf81gtWQ8psCx9");
 
-// Declare and export the program's entrypoint
-entrypoint!(process_instruction);
+#[program]
+pub mod agent16z {
+    use super::*;
 
-// Program entrypoint's implementation
-pub fn process_instruction(
-    program_id: &Pubkey, // Public key of the account the hello world program was loaded into
-    accounts: &[AccountInfo], // The account to say hello to
-    _instruction_data: &[u8], // Ignored, all helloworld instructions are hellos
-) -> ProgramResult {
-    msg!("Hello World Rust program entrypoint");
-
-    // Iterating accounts is safer than indexing
-    let accounts_iter = &mut accounts.iter();
-
-    // Get the account to say hello to
-    let account = next_account_info(accounts_iter)?;
-
-    // The account must be owned by the program in order to modify its data
-    if account.owner != program_id {
-        msg!("Greeted account does not have the correct program id");
-        return Err(ProgramError::IncorrectProgramId);
+    pub fn book_hotel(ctx: Context<BookHotel>, timestamp: u8, num_person: u8) -> Result<()> {
+        msg!("Booking hotel for {} person at {}", num_person, timestamp);
+        let account_data = &mut ctx.accounts.hotel_account;
+        account_data.user = ctx.accounts.user.key();
+        account_data.timestamp = timestamp;
+        account_data.num_person = num_person;
+        account_data.bump = ctx.bumps.hotel_account;
+        Ok(())
     }
 
-    // Increment and store the number of times the account has been greeted
-    let mut greeting_account = GreetingAccount::try_from_slice(&account.data.borrow())?;
-    greeting_account.counter += 1;
-    greeting_account.serialize(&mut *account.data.borrow_mut())?;
+    pub fn book_flight(ctx: Context<BookFlight>, timestamp: u8, num_passenger: u8) -> Result<()> {
+        msg!(
+            "Booking flight for {} passengers at {}",
+            num_passenger,
+            timestamp
+        );
+        let account_data = &mut ctx.accounts.flight_account;
+        account_data.user = ctx.accounts.user.key();
+        account_data.timestamp = timestamp;
+        account_data.num_passenger = num_passenger;
+        account_data.bump = ctx.bumps.flight_account;
+        Ok(())
+    }
 
-    msg!("Greeted {} time(s)!", greeting_account.counter);
+    pub fn book_taxi(ctx: Context<BookTaxi>, timestamp: u8) -> Result<()> {
+        msg!("Booking taxi at {}", timestamp);
+        let account_data = &mut ctx.accounts.taxi_account;
+        account_data.user = ctx.accounts.user.key();
+        account_data.timestamp = timestamp;
+        account_data.bump = ctx.bumps.taxi_account;
+        Ok(())
+    }
+}
 
-    Ok(())
+#[derive(Accounts)]
+#[instruction(timestamp: u8, num_person: u8)]
+pub struct BookHotel<'info> {
+    #[account(mut)]
+    pub user: Signer<'info>,
+
+    #[account(
+        init,
+        seeds = [b"hotel", user.key().as_ref()],
+        bump,
+        payer = user,
+        space = 8 + 32 + 1 + 1 + 1
+    )]
+    pub hotel_account: Account<'info, HotelAccount>,
+    pub system_program: Program<'info, System>,
+}
+
+#[derive(Accounts)]
+#[instruction(timestamp: u8, num_passenger: u8)]
+pub struct BookFlight<'info> {
+    #[account(mut)]
+    pub user: Signer<'info>,
+
+    #[account(
+        init,
+        seeds = [b"flight", user.key().as_ref()],
+        bump,
+        payer = user,
+        space = 8 + 32 + 1 + 1 + 1
+    )]
+    pub flight_account: Account<'info, FlightAccount>,
+    pub system_program: Program<'info, System>,
+}
+
+#[derive(Accounts)]
+#[instruction(timestamp: u8)]
+pub struct BookTaxi<'info> {
+    #[account(mut)]
+    pub user: Signer<'info>,
+
+    #[account(
+        init,
+        seeds = [b"taxi", user.key().as_ref()],
+        bump,
+        payer = user,
+        space = 8 + 32 + 1 + 1
+    )]
+    pub taxi_account: Account<'info, TaxiAccount>,
+    pub system_program: Program<'info, System>,
+}
+
+#[account]
+pub struct HotelAccount {
+    pub user: Pubkey,
+    pub timestamp: u8,
+    pub num_person: u8,
+    pub bump: u8,
+}
+
+#[account]
+pub struct FlightAccount {
+    pub user: Pubkey,
+    pub timestamp: u8,
+    pub num_passenger: u8,
+    pub bump: u8,
+}
+
+#[account]
+pub struct TaxiAccount {
+    pub user: Pubkey,
+    pub timestamp: u8,
+    pub bump: u8,
 }
