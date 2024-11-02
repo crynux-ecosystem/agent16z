@@ -4,6 +4,7 @@ import * as web3 from "@solana/web3.js";
 import { PublicKey, Keypair, Transaction } from "@solana/web3.js";
 import type { Agentz } from "../target/types/agentz";
 import { Mistral } from "@mistralai/mistralai";
+import { ToolTypes, FunctionT, FunctionT$inboundSchema } from "@mistralai/mistralai/models/components";
 import * as dotenv from "dotenv";
 dotenv.config({ path: ".env" });
 
@@ -122,6 +123,53 @@ const mistral = new Mistral({
   apiKey: process.env["MISTRAL_API_KEY"],
 });
 
+
+const tools = [
+  {
+      type: ToolTypes.Function,
+      function: {
+        name: "book_hotel",
+        description: "Book a hotel for users",
+        parameters: {
+            type: "object",
+            properties: {
+                num_person: {
+                    type: "integer",
+                    description: "Num of people to live in",
+                }
+            },
+            required: ["num_person"],
+        },
+      },
+  },
+  {
+      type: ToolTypes.Function,
+      function: {
+          name: "book_flight",
+          description: "Book a flight with the constraints",
+          parameters: {
+              type: "object",
+              properties: {
+                  num_passengers: {
+                      type: "integer",
+                      description: "Num of passengers to book a flight.",
+                  }
+              },
+              required: ["num_passengers"],
+          }
+      }
+  },
+  {
+    type: ToolTypes.Function,
+    function: {
+        name: "book_taxi",
+        description: "Book a taxi",
+        parameters: {},
+    },
+  }
+];
+
+
 (async () => {
   // await init_accounts(); // Call only once on the contracts
 
@@ -129,17 +177,29 @@ const mistral = new Mistral({
     model: "mistral-small-latest",
     messages: [
       {
-        content:
-          "Who is the best French painter? Answer in one short sentence.",
+        content: "Help me to book a trip to new york, including flight, accommodation and traffic to the airport",
         role: "user",
       },
     ],
+    tools: tools,
+    toolChoice: "any",
   });
 
   // Handle the result
   console.log(result);
+  console.log(result.choices[0].message.toolCalls);
 
-  await book_hotel(2, 173);
-  await book_flight(2, 173);
-  await book_taxi(173);
+  var f2sc = {
+    "book_hotel": book_hotel,
+    "book_flight": book_flight,
+    "book_taxi": book_taxi,
+  }
+
+
+  for (var idx in result.choices[0].message.toolCalls) {
+    let f = result.choices[0].message.toolCalls[idx];
+    let args: Record<string, any> = JSON.parse(f.function["arguments"] as string);
+    args["timestamp"] = 173;
+    await f2sc[f.function.name](args);
+  }
 })().then().catch(console.error);
