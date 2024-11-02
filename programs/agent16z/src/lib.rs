@@ -3,7 +3,7 @@ use anchor_lang::prelude::*;
 declare_id!("Hbt9TACtpjJSuFUu9esQ5DJSwx77dd7kHXvkCToRQNya");
 
 #[program]
-pub mod agent16z {
+pub mod agent_16z {
     use super::*;
 
     pub fn init_hotel(ctx: Context<InitHotel>) -> Result<()> {

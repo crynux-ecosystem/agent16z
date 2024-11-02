@@ -5,6 +5,7 @@
     },
     "dependencies": {
       "@coral-xyz/anchor": "0.29.0",
+      "rpc-websockets": "7.11.0",
       "@solana/web3.js": "1.78.4"
     },
     "devDependencies": {
