@@ -1,6 +1,6 @@
 import { PublicKey } from "@solana/web3.js";
 
-describe("aigent16z", () => {
+describe("aigentz", () => {
   it("Create Message Account", async () => {});
 
   it("Update Message Account", async () => {});

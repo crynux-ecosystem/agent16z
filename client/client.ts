@@ -2,7 +2,7 @@ import * as anchor from "@coral-xyz/anchor";
 import * as web3 from "@solana/web3.js";
 // Client
 import { PublicKey, Keypair, Transaction } from "@solana/web3.js";
-import type { Agent16z } from "../target/types/agent16z";
+import type { Agentz } from "../target/types/agentz";
 
 import fs from "fs";
 
@@ -10,9 +10,9 @@ import fs from "fs";
 // Configure the client to use the local cluster
 anchor.setProvider(anchor.AnchorProvider.env());
 
-const program = anchor.workspace.Agent16z as anchor.Program<Agent16z>;
+const program = anchor.workspace.Agentz as anchor.Program<Agentz>;
 
-const secretKey: number[] = JSON.parse(fs.readFileSync('../target/deploy/agent16z-keypair.json', 'utf8'));
+const secretKey: number[] = JSON.parse(fs.readFileSync('target/deploy/agentz-keypair.json', 'utf8'));
 const keypair = Keypair.fromSecretKey(Uint8Array.from(secretKey));
 interface Wallet {
   publicKey: typeof keypair.publicKey;
