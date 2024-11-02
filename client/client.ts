@@ -4,36 +4,12 @@ import * as web3 from "@solana/web3.js";
 import { PublicKey, Keypair, Transaction } from "@solana/web3.js";
 import type { Agentz } from "../target/types/agentz";
 
-import fs from "fs";
-
 
 // Configure the client to use the local cluster
 anchor.setProvider(anchor.AnchorProvider.env());
 
 const program = anchor.workspace.Agentz as anchor.Program<Agentz>;
-
-const secretKey: number[] = JSON.parse(fs.readFileSync('target/deploy/agentz-keypair.json', 'utf8'));
-const keypair = Keypair.fromSecretKey(Uint8Array.from(secretKey));
-interface Wallet {
-  publicKey: typeof keypair.publicKey;
-  signTransaction(transaction: Transaction): Promise<Transaction>;
-  signAllTransactions(transactions: Transaction[]): Promise<Transaction[]>;
-}
-
-// Create a wallet object from the Keypair
-const wallet: Wallet = {
-  publicKey: keypair.publicKey,
-  signTransaction: async (transaction: Transaction): Promise<Transaction> => {
-    transaction.partialSign(keypair);
-    return transaction;
-  },
-  signAllTransactions: async (transactions: Transaction[]): Promise<Transaction[]> => {
-    return transactions.map((transaction) => {
-      transaction.partialSign(keypair);
-      return transaction;
-    });
-  },
-};
+const wallet = anchor.AnchorProvider.env().wallet;
 
 
 (async () => {
