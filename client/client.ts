@@ -8,25 +8,102 @@ console.log("My address:", wallet.publicKey.toString());
 const balance = await pg.connection.getBalance(wallet.publicKey);
 console.log(`My balance: ${balance / web3.LAMPORTS_PER_SOL} SOL`);
 
-const [flightPda, flightBump] = PublicKey.findProgramAddressSync(
+const [hotelAgent, hotelBump] = PublicKey.findProgramAddressSync(
+  [Buffer.from("hotel"), wallet.publicKey.toBuffer()],
+  program.programId
+);
+
+const [flightAgent, flightBump] = PublicKey.findProgramAddressSync(
   [Buffer.from("flight"), wallet.publicKey.toBuffer()],
   program.programId
 );
 
-const transactionSignature = await program.methods
-  .bookFlight(2, 2)
-  .accounts({
-    flightAccount: flightPda,
-  })
-  .rpc({ commitment: "confirmed" });
-
-const flightAccount = await program.account.flightAccount.fetch(
-  flightPda,
-  "confirmed"
+const [taxiAgent, taxiBump] = PublicKey.findProgramAddressSync(
+  [Buffer.from("taxi"), wallet.publicKey.toBuffer()],
+  program.programId
 );
 
-console.log(JSON.stringify(flightAccount, null, 2));
-console.log(
-  "Transaction Signature:",
-  `https://solana.fm/tx/${transactionSignature}?cluster=devnet-solana`
-);
+const show_account = async (account, agent) => {
+  const accountData = await account.fetch(agent, "confirmed");
+  console.log(JSON.stringify(accountData, null, 2));
+};
+
+const init_accounts = async () => {
+  const tx = await program.methods
+    .initHotel()
+    .accounts({ hotelAccount: hotelAgent })
+    .rpc({ commitment: "confirmed" });
+  console.log(
+    "Transaction Signature:",
+    `https://solana.fm/tx/${tx}?cluster=devnet-solana`
+  );
+
+  await show_account(program.account.hotelAccount, hotelAgent);
+
+  const tx2 = await program.methods
+    .initFlight()
+    .accounts({ flightAccount: flightAgent })
+    .rpc({ commitment: "confirmed" });
+  console.log(
+    "Transaction Signature:",
+    `https://solana.fm/tx/${tx2}?cluster=devnet-solana`
+  );
+
+  await show_account(program.account.flightAccount, flightAgent);
+
+  const tx3 = await program.methods
+    .initTaxi()
+    .accounts({ taxiAccount: taxiAgent })
+    .rpc({ commitment: "confirmed" });
+  console.log(
+    "Transaction Signature:",
+    `https://solana.fm/tx/${tx3}?cluster=devnet-solana`
+  );
+
+  await show_account(program.account.taxiAccount, taxiAgent);
+};
+
+const book_flight = async (num_passengers, timestamp) => {
+  const tx = await program.methods
+    .bookFlight(timestamp, num_passengers)
+    .accounts({ flightAccount: flightAgent })
+    .rpc({ commitment: "confirmed" });
+  console.log(
+    "Transaction Signature:",
+    `https://solana.fm/tx/${tx}?cluster=devnet-solana`
+  );
+
+  await show_account(program.account.flightAccount, flightAgent);
+};
+
+const book_hotel = async (num_person, timestamp) => {
+  const tx = await program.methods
+    .bookHotel(timestamp, num_person)
+    .accounts({ hotelAccount: hotelAgent })
+    .rpc({ commitment: "confirmed" });
+  console.log(
+    "Transaction Signature:",
+    `https://solana.fm/tx/${tx}?cluster=devnet-solana`
+  );
+
+  await show_account(program.account.hotelAccount, hotelAgent);
+};
+
+const book_taxi = async (timestamp) => {
+  const tx = await program.methods
+    .bookTaxi(timestamp)
+    .accounts({ taxiAccount: taxiAgent })
+    .rpc({ commitment: "confirmed" });
+  console.log(
+    "Transaction Signature:",
+    `https://solana.fm/tx/${tx}?cluster=devnet-solana`
+  );
+
+  await show_account(program.account.taxiAccount, taxiAgent);
+};
+
+await init_accounts(); // Call only once on the contracts
+
+await book_hotel(2, 173);
+await book_flight(2, 173);
+await book_taxi(173);
