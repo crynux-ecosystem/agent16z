@@ -96,7 +96,7 @@ const request_payment = async (amount) => {
   console.log("From address: " + user_selected_wallet_address);
   console.log("To address: " + sp_address);
   const data = {
-    "amount": amount,
+    "amount": amount as string,
     "on_behalf_of": process.env["BRIDGE_SERVICE_PROVIDER"],
     "source": {
       "payment_rail": user_selected_chain,
@@ -112,7 +112,8 @@ const request_payment = async (amount) => {
   const header = {
     headers: {
       "Content-Type": "application/json",
-      "Api-Key": process.env["BRIDGE_API_KEY"]
+      "Api-Key": process.env["BRIDGE_API_KEY"],
+      "Idempotency-Key": process.env["BRIDGE_IDEMPOTENCY_KEY"],
     }
   };
   const resp = await axios.post("https://api.bridge.xyz/v0/transfers", data, header);
