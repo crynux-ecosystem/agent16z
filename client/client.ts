@@ -36,10 +36,11 @@ const wallet: Wallet = {
 };
 
 
-
-console.log("My address:", wallet.publicKey.toString());
-const balance = await program.provider.connection.getBalance(wallet.publicKey);
-console.log(`My balance: ${balance / web3.LAMPORTS_PER_SOL} SOL`);
+(async () => {
+  console.log("My address:", wallet.publicKey.toString());
+  const balance = await program.provider.connection.getBalance(wallet.publicKey);
+  console.log(`My balance: ${balance / web3.LAMPORTS_PER_SOL} SOL`);
+})().then().catch(console.error);
 
 const [hotelAgent, hotelBump] = PublicKey.findProgramAddressSync(
   [Buffer.from("hotel"), wallet.publicKey.toBuffer()],
@@ -138,8 +139,10 @@ const book_taxi = async (timestamp) => {
   await show_account(program.account.taxiAccount, taxiAgent);
 };
 
-await init_accounts(); // Call only once on the contracts
+(async () => {
+  await init_accounts(); // Call only once on the contracts
 
-await book_hotel(2, 173);
-await book_flight(2, 173);
-await book_taxi(173);
+  await book_hotel(2, 173);
+  await book_flight(2, 173);
+  await book_taxi(173);
+})().then().catch(console.error);
