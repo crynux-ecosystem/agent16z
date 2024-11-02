@@ -1,11 +1,20 @@
+import * as anchor from "@coral-xyz/anchor";
+import * as web3 from "@solana/web3.js";
 // Client
 import { PublicKey } from "@solana/web3.js";
+import type { Agent16z } from "../target/types/agent16z";
 
-const program = pg.program;
+// Configure the client to use the local cluster
+anchor.setProvider(anchor.AnchorProvider.env());
+
+const program = anchor.workspace.Agent16z as anchor.Program<Agent16z>;
+
+
+const program = program;
 const wallet = pg.wallet;
 
 console.log("My address:", wallet.publicKey.toString());
-const balance = await pg.connection.getBalance(wallet.publicKey);
+const balance = await program.provider.connection.getBalance(wallet.publicKey);
 console.log(`My balance: ${balance / web3.LAMPORTS_PER_SOL} SOL`);
 
 const [hotelAgent, hotelBump] = PublicKey.findProgramAddressSync(
