@@ -78,6 +78,48 @@ const init_accounts = async () => {
   await show_account(program.account.taxiAccount, taxiAgent);
 };
 
+
+
+const user_selected_chain = "polygon";
+const user_selected_currency = "usdc";
+const user_selected_wallet_address = process.env["POLYGON_ADDR"];
+
+const sp_chain = "solana";
+const sp_currency = "usdc";
+const sp_address = process.env["SOLANA_ADDR"];
+
+const request_payment = async (amount) => {
+  console.log(">>> Token transfer instructions: ");
+  console.log("Chain: " + sp_chain);
+  console.log("Currency: " + user_selected_currency);
+  console.log("Amount: " + amount);
+  console.log("From address: " + user_selected_wallet_address);
+  console.log("To address: " + sp_address);
+  const data = {
+    "amount": amount,
+    "on_behalf_of": process.env["BRIDGE_SERVICE_PROVIDER"],
+    "source": {
+      "payment_rail": user_selected_chain,
+      "currency": user_selected_currency,
+      "from_address": user_selected_wallet_address
+    },
+    "destination": {
+      "payment_rail": sp_chain,
+      "currency": sp_currency,
+      "to_address": sp_address,
+    }
+  };
+  const header = {
+    headers: {
+      "Content-Type": "application/json",
+      "Api-Key": process.env["BRIDGE_API_KEY"]
+    }
+  };
+  const resp = await axios.post("https://api.bridge.xyz/v0/transfers", data, header);
+  console.log(resp.data.source_deposit_instructions);
+};
+
+
 const book_flight = async (num_passengers, timestamp) => {
   const tx = await program.methods
     .bookFlight(timestamp, num_passengers)
@@ -90,6 +132,8 @@ const book_flight = async (num_passengers, timestamp) => {
   );
 
   await show_account(program.account.flightAccount, flightAgent);
+
+  await request_payment(0.02);
 };
 
 const book_hotel = async (num_person, timestamp) => {
@@ -104,6 +148,8 @@ const book_hotel = async (num_person, timestamp) => {
   );
 
   await show_account(program.account.hotelAccount, hotelAgent);
+
+  await request_payment(0.05);
 };
 
 const book_taxi = async (timestamp) => {
@@ -118,6 +164,8 @@ const book_taxi = async (timestamp) => {
   );
 
   await show_account(program.account.taxiAccount, taxiAgent);
+
+  await request_payment(0.01);
 };
 
 const mistral = new Mistral({
@@ -125,7 +173,7 @@ const mistral = new Mistral({
 });
 
 
-const tools = [
+const pool = [
   {
       type: ToolTypes.Function,
       function: {
@@ -170,45 +218,6 @@ const tools = [
   }
 ];
 
-
-const user_selected_chain = "polygon";
-const user_selected_currency = "usdc";
-const user_selected_wallet_address = "";
-
-const sp_chain = "solana";
-const sp_currency = "usdc";
-const sp_address = "";
-
-const request_payment = async (amount) => {
-  const resp = await axios.post("https://api.bridge.xyz/v0/transfers", {
-    "amount": amount,
-    "on_behalf_of": "service_provider",
-    "source": {
-      "payment_rail": user_selected_chain,
-      "currency": user_selected_currency,
-      "from_address": user_selected_wallet_address
-    },
-    "destination": {
-      "payment_rail": sp_chain,
-      "currency": sp_currency,
-      "to_address": sp_address,
-    }
-  }, {
-    headers: {
-      "Content-Type": "application/json",
-      "Api-Key": process.env["BRIDGE_API_KEY"],
-    }
-  });
-
-  const instructions = resp.data.source_deposit_instructions;
-  console.log("Token transfer instructions: ");
-  console.log("Chain: " + instructions.payment_rail);
-  console.log("Currency: " + instructions.currency);
-  console.log("Amount: " + instructions.amount);
-  console.log("From address: " + instructions.from_address);
-  console.log("To address: " + instructions.to_address);
-};
-
 (async () => {
   // await init_accounts(); // Call only once on the contracts
 
@@ -220,7 +229,7 @@ const request_payment = async (amount) => {
         role: "user",
       },
     ],
-    tools: tools,
+    tools: pool,
     toolChoice: "any",
   });
 
@@ -242,7 +251,5 @@ const request_payment = async (amount) => {
     args["timestamp"] = 173;
     await f2sc[f.function.name](args);
   }
-
-  await request_payment(0.5);
 
 })().then().catch(console.error);
